@@ -1,0 +1,327 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>[hidden]{display:none!important}body{margin:0}</style></head><body><title>Registro de Andén</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: terminal RF de una mano — visor arriba, último bulto, gatillo grande al alcance del pulgar, registro abajo */
+:root{
+  --bg:#eef0ee; --panel:#ffffff; --ink:#1c2321; --muted:#5f6b67; --line:#d5dad7;
+  --signal:#f2b705; --signal-ink:#1c2321; --ok:#1f8a4c; --warn:#b4521b; --soft:#f6f7f6; --scan:#e5322d;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141917; --panel:#1d2421; --ink:#e7ebe9; --muted:#97a39e; --line:#2f3935;
+  --signal:#f2b705; --signal-ink:#141917; --ok:#4cc982; --warn:#f08a50; --soft:#232b28; --scan:#ff4b45; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141917; --panel:#1d2421; --ink:#e7ebe9; --muted:#97a39e; --line:#2f3935;
+  --signal:#f2b705; --signal-ink:#141917; --ok:#4cc982; --warn:#f08a50; --soft:#232b28; --scan:#ff4b45; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+.wrap{max-width:560px;margin:0 auto;padding-block:12px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:12px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:.02em;text-transform:uppercase;margin:0;line-height:1}
+h1 span{display:inline-block;background:var(--signal);color:var(--signal-ink);padding:2px 7px;margin-left:3px}
+.dock{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.dock label{text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.dock input{width:100px}
+input[type=text]{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:9px 10px;min-width:0}
+input[type=text]:focus-visible,button:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+
+.viewer{position:relative;border-radius:10px;overflow:hidden;background:#0d1110;aspect-ratio:4/3;max-width:100%}
+#reader{position:absolute;inset:0}
+#reader video{width:100%!important;height:100%!important;object-fit:cover;display:block}
+#reader img, #reader > div:not(:first-child){display:none!important}
+.aim{position:absolute;left:6%;right:6%;top:50%;height:2px;background:var(--scan);box-shadow:0 0 12px var(--scan);opacity:.25;transition:opacity .15s;pointer-events:none}
+.viewer.armed .aim{opacity:1;animation:pulse .7s ease-in-out infinite alternate}
+@keyframes pulse{from{transform:scaleX(.96)}to{transform:scaleX(1)}}
+.frame{position:absolute;left:6%;right:6%;top:28%;bottom:28%;border:2px solid rgba(255,255,255,.35);border-radius:6px;pointer-events:none}
+.viewer.hit .frame{border-color:#4cc982;box-shadow:inset 0 0 0 999px rgba(76,201,130,.18)}
+.idle{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;color:#c9d2ce;font-size:14px}
+.viewer.on .idle{display:none}
+
+.last{display:flex;flex-direction:column;gap:2px;padding:10px 14px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+.last.flash{border-color:var(--ok);animation:fl .6s ease}
+@keyframes fl{from{background:color-mix(in srgb,var(--ok) 20%,var(--panel))}to{background:var(--panel)}}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}
+.code{font-family:var(--mono);font-weight:600;font-size:clamp(20px,6.5vw,28px);word-break:break-all;line-height:1.2}
+.meta{font-size:13px;color:var(--muted)}
+
+.trigger{font-family:var(--display);font-weight:700;font-size:30px;letter-spacing:.08em;text-transform:uppercase;
+  background:var(--signal);color:var(--signal-ink);border:0;border-radius:14px;padding:22px 16px;width:100%;cursor:pointer;
+  box-shadow:0 4px 0 color-mix(in srgb,var(--signal) 55%,#000);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.trigger:active,.trigger.busy{transform:translateY(3px);box-shadow:0 1px 0 color-mix(in srgb,var(--signal) 55%,#000)}
+.trigger small{display:block;font-family:var(--body);font-size:13px;font-weight:500;letter-spacing:0;text-transform:none;opacity:.8}
+
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;background:transparent;padding:9px 12px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+button{font:600 14px var(--body);border-radius:8px;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:9px 12px;cursor:pointer}
+button.ghost{background:transparent}
+button.danger{color:var(--warn)}
+.status{font-size:13px;margin:0;color:var(--muted);min-height:1.2em}
+.status.err{color:var(--warn)} .status.ok{color:var(--ok)}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.stat b{display:block;font-family:var(--display);font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
+
+.manual{display:flex;gap:8px}
+.manual input{flex:1}
+.hint{font-size:12px;color:var(--muted);margin:-4px 0 0}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.log-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.log-head h2{font-family:var(--display);font-size:20px;text-transform:uppercase;letter-spacing:.04em;margin:0}
+ol.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+ol.log li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+ol.log li:first-child{border-top:0}
+.n{font-family:var(--mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:2.5em}
+.row-main{min-width:0}
+.row-code{font-family:var(--mono);font-weight:600;word-break:break-all}
+.row-meta{font-size:12px;color:var(--muted)}
+.dup{font-size:11px;font-weight:600;color:var(--warn);text-transform:uppercase;letter-spacing:.06em;margin-left:6px}
+.x{padding:5px 9px;font-size:12px}
+ol.log li.empty{display:block;padding:16px 4px;color:var(--muted);text-align:center;font-size:14px}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px}
+@media (prefers-reduced-motion:reduce){.last.flash,.viewer.armed .aim{animation:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Registro <span>Andén</span></h1>
+    <div class="dock"><label for="dock">Andén</label><input type="text" id="dock" value="Andén 1" autocomplete="off"></div>
+  </header>
+
+  <div class="viewer" id="viewer">
+    <div id="reader"></div>
+    <div class="frame"></div><div class="aim"></div>
+    <div class="idle" id="idle">Aprieta LEER para encender el visor y apunta al código del bulto.</div>
+  </div>
+
+  <div class="last" id="last" aria-live="polite">
+    <span class="lbl">Último bulto</span>
+    <span class="code" id="lastCode">—</span>
+    <span class="meta" id="lastMeta">Esperando lectura</span>
+  </div>
+
+  <button class="trigger" id="trigger">Leer<small id="trigHint">Apunta y aprieta, como una pistola RF</small></button>
+  <input type="file" id="photo" accept="image/*" capture="environment" hidden>
+
+  <div class="row">
+    <div class="seg" role="group" aria-label="Modo de lectura">
+      <button id="mTrig" aria-pressed="true">Gatillo</button>
+      <button id="mCont" aria-pressed="false">Continuo</button>
+    </div>
+    <button class="ghost" id="btnStop" hidden>Apagar cámara</button>
+  </div>
+  <p class="status" id="status" role="status"></p>
+
+  <div class="stats">
+    <div class="stat"><span class="lbl">Bultos</span><b id="sTotal">0</b></div>
+    <div class="stat"><span class="lbl">Distintos</span><b id="sUniq">0</b></div>
+    <div class="stat"><span class="lbl">Última hora</span><b id="sHour">0</b></div>
+  </div>
+
+  <form class="manual" id="manual">
+    <input type="text" id="manualCode" placeholder="Código manual o pistola Bluetooth" autocomplete="off" aria-label="Código manual o pistola Bluetooth">
+    <button type="submit">Agregar</button>
+  </form>
+  <p class="hint">Con una pistola lectora Bluetooth: toca este campo y dispara; cada código entra solo.</p>
+
+  <section class="panel" aria-label="Registro">
+    <div class="log-head">
+      <h2>Registro</h2>
+      <div class="row">
+        <button id="btnCsv">Exportar CSV</button>
+        <button id="btnCopy">Copiar</button>
+        <button class="ghost danger" id="btnClear">Borrar todo</button>
+      </div>
+    </div>
+    <div class="confirm" id="confirm" hidden>¿Borrar todas las lecturas? <button class="danger" id="yesClear">Sí, borrar</button><button class="ghost" id="noClear">Cancelar</button></div>
+    <ol class="log" id="log"></ol>
+  </section>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const KEY="registro-anden-v1";
+let reads=[];
+try{reads=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){reads=[]}
+const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(reads))}catch(e){}};
+try{const d=localStorage.getItem(KEY+"-dock"); if(d) $("dock").value=d}catch(e){}
+$("dock").addEventListener("change",()=>{try{localStorage.setItem(KEY+"-dock",$("dock").value)}catch(e){}});
+
+function setStatus(t,cls){const s=$("status");s.textContent=t;s.className="status"+(cls?" "+cls:"")}
+const fmtTime=ts=>new Date(ts).toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+const fmtDate=ts=>new Date(ts).toLocaleDateString("es-CL");
+
+let actx=null;
+function tone(freq,dur){
+  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(),g=actx.createGain();o.type="square";o.frequency.value=freq;g.gain.value=.05;
+    o.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+dur)}catch(e){}
+}
+const beepOk=()=>{tone(2400,.08);try{navigator.vibrate&&navigator.vibrate(50)}catch(e){}};
+const beepFail=()=>{tone(400,.18);try{navigator.vibrate&&navigator.vibrate([60,60,60])}catch(e){}};
+
+let lastHit={code:"",t:0};
+function addRead(code,format,source){
+  code=String(code).trim(); if(!code) return false;
+  const now=Date.now();
+  if(source==="continuo" && code===lastHit.code && now-lastHit.t<2500) return false;
+  lastHit={code,t:now};
+  const dup=reads.some(r=>r.code===code);
+  reads.unshift({code,format:format||"—",source,dock:$("dock").value.trim()||"—",ts:now,dup});
+  persist();render();beepOk();
+  const l=$("last");l.classList.remove("flash");void l.offsetWidth;l.classList.add("flash");
+  const v=$("viewer");v.classList.add("hit");setTimeout(()=>v.classList.remove("hit"),350);
+  return true;
+}
+
+function render(){
+  const last=reads[0];
+  $("lastCode").textContent=last?last.code:"—";
+  $("lastMeta").textContent=last?`${last.format} · ${fmtTime(last.ts)} · ${last.dock}${last.dup?" · repetido":""}`:"Esperando lectura";
+  $("sTotal").textContent=reads.length;
+  $("sUniq").textContent=new Set(reads.map(r=>r.code)).size;
+  $("sHour").textContent=reads.filter(r=>Date.now()-r.ts<3600e3).length;
+  const ol=$("log");ol.textContent="";
+  if(!reads.length){const e=document.createElement("li");e.className="empty";
+    e.textContent="Aún no hay bultos registrados. Aprieta LEER y apunta al primer código.";ol.appendChild(e);return}
+  reads.forEach((r,i)=>{
+    const li=document.createElement("li");
+    const n=document.createElement("span");n.className="n";n.textContent=String(reads.length-i).padStart(3,"0");
+    const m=document.createElement("div");m.className="row-main";
+    const c=document.createElement("div");c.className="row-code";c.textContent=r.code;
+    if(r.dup){const d=document.createElement("span");d.className="dup";d.textContent="Repetido";c.appendChild(d)}
+    const mt=document.createElement("div");mt.className="row-meta";mt.textContent=`${fmtTime(r.ts)} · ${r.format} · ${r.dock} · ${r.source}`;
+    m.append(c,mt);
+    const x=document.createElement("button");x.className="ghost x";x.textContent="Quitar";x.setAttribute("aria-label","Quitar "+r.code);
+    x.onclick=()=>{reads.splice(i,1);persist();render()};
+    li.append(n,m,x);ol.appendChild(li);
+  });
+}
+
+/* ---- Lector tipo RF ---- */
+let scanner=null, camOn=false, camFailed=false, armed=false, armTimer=null, mode="gatillo";
+function getScanner(){
+  if(!window.Html5Qrcode){setStatus("No se pudo cargar el lector. Revisa la conexión y recarga.","err");return null}
+  if(!scanner){
+    const F=Html5QrcodeSupportedFormats;
+    scanner=new Html5Qrcode("reader",{verbose:false,
+      formatsToSupport:[F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E,F.CODE_128,F.CODE_39,F.CODE_93,F.ITF,F.CODABAR,F.QR_CODE,F.DATA_MATRIX],
+      experimentalFeatures:{useBarCodeDetectorIfSupported:true}});
+  }
+  return scanner;
+}
+const fmtName=res=>{try{return res.result.format.formatName}catch(e){return "—"}};
+
+function onDecode(text,res){
+  if(mode==="continuo"){addRead(text,fmtName(res),"continuo");return}
+  if(!armed) return;                 // en modo gatillo solo lee con el gatillo apretado
+  disarm();
+  addRead(text,fmtName(res),"gatillo");
+  setStatus("Leído. Aprieta LEER para el siguiente bulto.","ok");
+}
+function arm(){
+  armed=true;$("viewer").classList.add("armed");$("trigger").classList.add("busy");
+  setStatus("Leyendo… apunta al código.");
+  clearTimeout(armTimer);
+  armTimer=setTimeout(()=>{if(armed){disarm();beepFail();setStatus("Sin lectura. Acércate o mejora la luz e intenta de nuevo.","err")}},6000);
+}
+function disarm(){armed=false;clearTimeout(armTimer);$("viewer").classList.remove("armed");$("trigger").classList.remove("busy")}
+
+async function startCam(){
+  const s=getScanner();if(!s)return false;
+  setStatus("Encendiendo cámara…");
+  try{
+    await s.start({facingMode:"environment"},
+      {fps:15,qrbox:(w,h)=>({width:Math.floor(w*.88),height:Math.max(80,Math.floor(h*.44))}),aspectRatio:1.333,disableFlip:true},
+      onDecode,()=>{});
+    camOn=true;$("viewer").classList.add("on");$("btnStop").hidden=false;return true;
+  }catch(e){
+    camFailed=true;
+    $("trigHint").textContent="Modo foto: aprieta, toma la foto y se registra";
+    setStatus("La cámara en vivo no está permitida aquí. LEER usará el modo foto. Para lectura en vivo abre la página desde un link https.","err");
+    return false;
+  }
+}
+async function stopCam(){
+  disarm();
+  try{await scanner.stop();scanner.clear()}catch(e){}
+  camOn=false;$("viewer").classList.remove("on");$("btnStop").hidden=true;
+}
+
+$("trigger").onclick=async()=>{
+  tone(1,.001); // desbloquea el audio en el primer toque
+  if(camFailed){$("photo").value="";$("photo").click();return}
+  if(!camOn){const ok=await startCam();if(!ok){$("photo").value="";$("photo").click();return}}
+  if(mode==="continuo"){setStatus("Modo continuo: pasa los bultos frente a la cámara.","ok");return}
+  arm();
+};
+$("btnStop").onclick=()=>{stopCam();setStatus("Cámara apagada.")};
+
+function setMode(m){
+  mode=m;disarm();
+  $("mTrig").setAttribute("aria-pressed",m==="gatillo");$("mCont").setAttribute("aria-pressed",m==="continuo");
+  $("trigHint").textContent=camFailed?"Modo foto: aprieta, toma la foto y se registra":
+    (m==="gatillo"?"Apunta y aprieta, como una pistola RF":"Enciende la cámara y lee todo lo que pase");
+  if(m==="continuo"&&camOn)setStatus("Modo continuo: pasa los bultos frente a la cámara.","ok");
+}
+$("mTrig").onclick=()=>setMode("gatillo");
+$("mCont").onclick=()=>setMode("continuo");
+
+$("photo").onchange=async e=>{
+  const f=e.target.files&&e.target.files[0];if(!f)return;
+  const s=getScanner();if(!s)return;
+  setStatus("Leyendo la foto…");
+  try{const res=await s.scanFileV2(f,false);addRead(res.decodedText,fmtName(res),"foto");setStatus("Leído. Aprieta LEER para el siguiente bulto.","ok")}
+  catch(err){beepFail();setStatus("No se encontró un código en la foto. Acércate, enfoca y evita reflejos.","err")}
+  try{s.clear()}catch(e){}
+};
+
+/* Pistola Bluetooth / teclado: escribe el código y envía Enter */
+$("manual").addEventListener("submit",e=>{e.preventDefault();const v=$("manualCode").value;
+  if(v.trim()){addRead(v,"teclado","pistola/manual");$("manualCode").value="";$("manualCode").focus()}});
+
+/* ---- Exportar ---- */
+function toCsv(){
+  const esc=v=>`"${String(v).replace(/"/g,'""')}"`;
+  const rows=[["n","fecha","hora","codigo","formato","anden","origen","repetido"]];
+  [...reads].reverse().forEach((r,i)=>rows.push([i+1,fmtDate(r.ts),fmtTime(r.ts),r.code,r.format,r.dock,r.source,r.dup?"si":"no"]));
+  return "﻿"+rows.map(r=>r.map(esc).join(";")).join("\r\n");
+}
+$("btnCsv").onclick=async()=>{
+  if(!reads.length){setStatus("No hay lecturas para exportar.","err");return}
+  const name=`registro-anden-${new Date().toISOString().slice(0,10)}.csv`;
+  const dl=window.claude?.use?await window.claude.use("downloads").catch(()=>null):null;
+  if(dl){
+    try{await dl.save({filename:name,data:toCsv()});setStatus("CSV guardado.","ok")}
+    catch(e){setStatus(e&&e.code==="declined"?"Descarga cancelada.":"No se pudo descargar aquí. Usa “Copiar” y pega en Excel.","err")}
+    return;
+  }
+  if(window.claude){setStatus("No se pudo descargar aquí. Usa “Copiar” y pega en Excel.","err");return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([toCsv()],{type:"text/csv"}));a.download=name;a.click();
+  setStatus("CSV descargado.","ok");
+};
+$("btnCopy").onclick=()=>{
+  const txt=["Hora\tCódigo\tFormato\tAndén",...[...reads].reverse().map(r=>`${fmtTime(r.ts)}\t${r.code}\t${r.format}\t${r.dock}`)].join("\n");
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>setStatus("Registro copiado. Pégalo en Excel o Google Sheets.","ok"),
+      ()=>setStatus("No se pudo copiar automáticamente.","err"));
+  }else setStatus("No se pudo copiar automáticamente.","err");
+};
+$("btnClear").onclick=()=>{if(reads.length)$("confirm").hidden=false};
+$("noClear").onclick=()=>{$("confirm").hidden=true};
+$("yesClear").onclick=()=>{reads=[];persist();render();$("confirm").hidden=true;setStatus("Registro borrado.")};
+
+render();
+</script>
+</body></html>
